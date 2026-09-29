@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧眼鏡數據分析系統 - Smart Glasses Data Analysis System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-container">
+                    <img src="/static/logo.jpg" alt="AI READ-COGN EYE Logo">
+                </div>
+                <div class="header-text">
+                    <h1>整合性閱讀認知分群智慧系統<br>Integrated Reading Cognition Clustering System</h1>
+                    <!--<p>自動分析認知表現與每日生活習慣<br>Automatically analyze cognitive performance and daily habits</p>-->
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="serverStatus" class="server-status"></div>
+
+            <div class="upload-section" id="uploadSection">
+                <h2>📁 上傳閱讀認知評估數據<br>Upload Reading Cognition Assessment Data</h2>
+                <p style="color: #666; margin: 15px 0;">支援 xlsx 與 CSV 格式檔案<br>Supports xlsx and CSV file formats</p>
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        選擇檔案<br>Select File
+                    </button>
+                </div>
+                <div id="fileName" class="file-name"></div>
+            </div>
+
+            <!-- 手動輸入單筆資料區塊 -->
+            <div class="manual-input-section" id="manualInputSection" style="display: none;">
+                <h3>✏️ 手動輸入單筆資料<br>Enter Single Data Manually</h3>
+                <!-- 手動輸入：基本資料 -->
+                <h4 style="color: #666; margin-bottom: 20px;margin-top: 40px;">請輸入以下基本資料<br>Please enter the following basic information</h4>
+                
+                <div class="input-grid">
+                    <!-- 新增：病歷號欄位 -->
+                    <div class="input-item">
+                        <label for="medicalId">病歷號 *<br>Medical Record Number</label>
+                        <input id="medicalId" type="text" placeholder="例如：A123456" required>
+                    </div>
+                    <div class="input-item">
+                        <label for="name">受測者 *<br>Name</label>
+                        <input id="name" type="text" placeholder="王小明 / John Wang"  required>
+                    </div>
+                </div>
+                <!-- 手動輸入：模型特徵 -->
+                <h4 style="color: #666; margin-bottom: 20px;margin-top: 40px;">請輸入以下五個模型特徵<br>Please enter the following five model features</h4>
+                
+                <div class="input-grid">
+                    <div class="input-item">
+                        <label for="age">年齡 *<br>Age *</label>
+                        <input id="age" type="number" min="0" max="120" step="1" placeholder="e.g., 68" required>
+                    </div>
+                    <div class="input-item">
+                        <label>認知六大面向總分 *<br>Total Cognitive Score *</label>
+                        <input type="number" step="0.01" id="cogScore" placeholder="e.g., 25.5" required>
+                    </div>
+                    
+                    <div class="input-item">
+                        <label>較長固視點數量 (1000ms以上) *<br>Number of Long Fixations (>1000ms) *</label>
+                        <input type="number" step="1" id="fixation1000" placeholder="e.g., 5" required>
+                    </div>
+                    
+                    <div class="input-item">
+                        <label>較長固視點數量 (300ms-1000ms) *<br>Number of Long Fixations (300ms-1000ms) *</label>
+                        <input type="number" step="0.01" id="fixation300_1000" placeholder="e.g., 75.5" required>
+                    </div>
+                    
+                    <div class="input-item">
+                        <label>總體固視時間(秒) *<br>Total Fixation Time (sec) *</label>
+                        <input type="number" step="0.01" id="totalFixTime" placeholder="e.g., 45.2" required>
+                    </div>
+                    
+                    <div class="input-item">
+                        <label>總體閱讀時間(秒) *<br>Total Reading Time (sec) *</label>
+                        <input type="number" step="1" id="totalReadingTime" placeholder="e.g., 120" required>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 40px; color: #667eea;">每日生活習慣（選填）<br>Daily Habits (Optional)</h4>
+                <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">如需達標分析，請填寫以下資料<br>Fill in the following data for benchmark analysis</p>
+                
+                <div class="input-grid">
+                    <!-- 近距離閱讀/書寫 -->
+                    <div class="input-item">
+                        <label for="nearReading">平均每天近距離閱讀或書寫的時間 <br>Average Daily Near Reading/Writing Time</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="nearReading" required style="flex: 1;">
+                                <option value="">請選擇 <br>Please Select</option>
+                                <option value="1">&lt;1 小時（&lt;1 hour）</option>
+                                <option value="2">&GreaterEqual;1 小時（&GreaterEqual;1 hour）</option>
+                            </select>
+                            <input type="number" id="nearReadingHours" placeholder="精確小時" step="0.5" min="1" style="width: 100px; display: none;">
+                        </div>
+                    </div>
+
+                    <!-- 課外讀物 -->
+                    <div class="input-item">
+                    <label for="extraReading">平均每天閱讀課外課物（如繪本、小說、漫畫、散文等）的時間<br>Average Daily Extracurricular Reading Time (picture books, novels, comics, essays, etc.)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="extraReading" required style="flex: 1;">
+                            <option value="">請選擇 <br>Please Select</option>
+                            <option value="1">&lt;1 小時（&lt;1 hour）</option>
+                            <option value="2">&GreaterEqual;1 小時（&GreaterEqual;1 hour）</option>
+                        </select>
+                        <input type="number" id="extraReadingHours" placeholder="精確小時" step="0.5" min="1" style="width: 100px; display: none;">
+                    </div>
+                    </div>
+
+                    <!-- 靜態活動 -->
+                    <div class="input-item">
+                    <label for="staticActivity">平均每天進行靜態活動(如音樂、作文、下棋、打牌等)的時間<br>Average Daily Static Activities Time (music, writing, chess, card games, etc.)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="staticActivity" required style="flex: 1;">
+                            <option value="">請選擇 <br>Please Select</option>
+                            <option value="1">&lt;1 小時（&lt;1 hour）</option>
+                            <option value="2">&GreaterEqual;1 小時（&GreaterEqual;1 hour）</option>
+                        </select>
+                        <input type="number" id="staticActivityHours" placeholder="精確小時" step="0.5" min="1" style="width: 100px; display: none;">
+                    </div>
+                    </div>
+
+                    <!-- 動態活動 -->
+                    <div class="input-item">
+                    <label for="dynamicActivity">平均每天進行動態活動(如超慢跑、快走、健身操等)的時間<br>Average Daily Dynamic Activities Time (jogging, brisk walking, aerobics, etc.)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="dynamicActivity" required style="flex: 1;">
+                            <option value="">請選擇 <br>Please Select</option>
+                            <option value="1">&lt;1 小時（&lt;1 hour）</option>
+                            <option value="2">&GreaterEqual;1 小時（&GreaterEqual;1 hour）</option>
+                        </select>
+                        <input type="number" id="dynamicActivityHours" placeholder="精確小時" step="0.5" min="1" style="width: 100px; display: none;">
+                    </div>
+                    </div>
+
+                    <!-- 觀看電視 -->
+                    <div class="input-item">
+                    <label for="tvTime">平均每天觀看電視節目（如用電視、平板、手機觀看卡通、連續劇或電影等）的時間<br>Average Daily TV/Screen Time (TV, tablet, phone for cartoons, series, movies, etc.)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="tvTime" required style="flex: 1;">
+                            <option value="">請選擇 <br>Please Select</option>
+                            <option value="1">&lt;1 小時（&lt;1 hour）</option>
+                            <option value="2">&GreaterEqual;1 小時（&GreaterEqual;1 hour）</option>
+                        </select>
+                        <input type="number" id="tvTimeHours" placeholder="精確小時" step="0.5" min="1" style="width: 100px; display: none;">
+                    </div>
+                    </div>
+
+                    <!-- 使用電腦 -->
+                    <div class="input-item">
+                    <label for="computerTime">平均每天使用電腦的時間<br>Average Daily Computer Usage Time</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="computerTime" required style="flex: 1;">
+                            <option value="">請選擇 <br>Please Select</option>
+                            <option value="1">&lt;1 小時（&lt;1 hour）</option>
+                            <option value="2">&GreaterEqual;1 小時（&GreaterEqual;1 hour）</option>
+                        </select>
+                        <input type="number" id="computerTimeHours" placeholder="精確小時" step="0.5" min="1" style="width: 100px; display: none;">
+                    </div>
+                    </div>
+                </div>
+
+                <!-- IPAQ 身體活動量評估（選填）-->
+                <h4 style="margin-top: 40px; color: #667eea;">IPAQ 身體活動量評估（選填）<br>IPAQ Physical Activity Assessment (Optional)</h4>
+                <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">
+                    請回想過去一週的身體活動情況<br>
+                    Please recall your physical activities in the past week
+                </p>
+                
+                <div class="input-grid">
+                    <!-- 費力活動 - 天數 -->
+                    <div class="input-item">
+                        <label for="vigDay">最近 7 天裡，你花多少天做強而有力的身體活動（以費力的身體負荷且讓你呼吸較正常更為急促的活動），像是提重物、苦力、有氧 運動或快騎腳踏車？<br>During the last 7 days, on how many days did you do vigorous physical activities that take hard physical effort and make you breathe much harder than normal? (e.g., lifting heavy objects, heavy labor, aerobics, or fast cycling)</label>
+                        <div>
+                            每週 <input type="number" id="vigDay" min="0" max="7" step="1" placeholder="e.g., 3" style="max-width: 45%;"> 天<span> (Days per week)</span>，<br>
+                            每天 <input type="number" id="vigMin" min="0" max="960" step="1" placeholder="e.g., 30" style="max-width: 45%;"> 分鐘<span> (Minutes per day)</span>
+                        </div>
+                        <small style="color: #888;">例如：跑步、高強度有氧運動<br>e.g., running, high-intensity aerobics</small>
+                    </div>
+
+                    <!-- 費力活動 - 分鐘數 -->
+                    <!--
+                    <div class="input-item">
+                        <label for="vigMin">在那幾天裡，平均每天進行費力/強度活動幾分鐘？<br>Minutes of Vigorous Activity per Day</label>
+                        <input type="number" id="vigMin" min="0" max="960" step="1" placeholder="例如：30（分鐘）">
+                        <small style="color: #888;">單次至少10分鐘才計入<br>Minimum 10 minutes per session</small>
+                    </div>
+                    -->
+                    <!-- 中等強度活動 - 天數 -->
+                    <div class="input-item">
+                        <label for="modDay">最近 7 天裡，你花多少時間做適度的身體活動（以適度的身體負荷並且讓你呼吸比正常費力一些的活動），像是提輕的物品、正常的速度騎腳踏車或網球雙打？不包含走路。
+                            <br>
+                            During the last 7 days, how much time did you spend on moderate physical activities (activities that take moderate physical effort and make you breathe somewhat harder than normal), such as carrying light loads, bicycling at a regular pace, or doubles tennis? Do not include walking.
+                        </label>
+                        <div>
+                            每週 <input type="number" id="modDay" min="0" max="7" step="1" placeholder="e.g., 5" style="max-width: 45%;"> 天<span> (Days per week)</span>，<br>
+                            每天 <input type="number" id="modMin" min="0" max="960" step="1" placeholder="e.g., 40" style="max-width: 45%;"> 分鐘<span> (Minutes per day)</span>
+                        </div>
+                            <small style="color: #888;">例如：快走、騎腳踏車<br>e.g., brisk walking, cycling</small>
+                    </div>
+
+                    <!-- 中等強度活動 - 分鐘數 -->
+                    <!--
+                    <div class="input-item">
+                        <label for="modMin">在那幾天裡，平均每天進行中等強度活動幾分鐘？<br>Minutes of Moderate Activity per Day</label>
+                        <input type="number" id="modMin" min="0" max="960" step="1" placeholder="例如：40（分鐘）">
+                        <small style="color: #888;">單次至少10分鐘才計入<br>Minimum 10 minutes per session</small>
+                    </div>
+                    -->
+                    <!-- 步行活動 - 天數 -->
+                    <div class="input-item">
+                        <label for="walkDay">最近 7 天裡，你花多少時間在走路，包含工作、在家、從某地到某地、娛樂、遊戲或休閒時的走路？<br>During the last 7 days, how much time did you spend walking, including at work, at home, from place to place, for recreation, play, or leisure?</label>
+                        <div>
+                            每週 <input type="number" id="walkDay" min="0" max="7" step="1" placeholder="e.g., 7" style="max-width: 45%;"> 天<span> (Days per week)</span>，<br>
+                            每天 <input type="number" id="walkMin" min="0" max="960" step="1" placeholder="e.g., 20" style="max-width: 45%;"> 分鐘<span> (Minutes per day)</span>
+                        </div>
+                        
+                        <small style="color: #888;">包括走路、散步等<br>Including commuting, leisure walking</small>
+                    </div>
+
+                    <!-- 坐著 - 分鐘數 -->
+                     
+                    <div class="input-item">
+                        <label for="walkMin">在最近連續 7 個非假日時間（扣除週六與週日）你花多少時間在坐著？包含花在工作、家裡、做作業及休閒時的坐著<br>How much time did you spend sitting over the last 7 consecutive non-holiday days (excluding Saturdays and Sundays)? This includes sitting at work, at home, doing homework, and during leisure time.</label>
+                        <div>
+                            每週 <input type="number" id="walkDay" min="0" max="7" step="1" placeholder="e.g., 7" style="max-width: 45%;"> 天<span> (Days per week)</span>，<br>
+                            每天 <input type="number" id="walkMin" min="0" max="960" step="1" placeholder="e.g., 20" style="max-width: 45%;"> 分鐘<span> (Minutes per day)</span>
+                        </div>
+                        <small style="color: #888;">包含花在書桌、拜訪朋友、讀書或看電視的躺著或坐著<br>including sitting or lying down while at your desk, visiting friends, reading, or watching TV</small>
+                    </div>
+                   
+                </div>
+                
+                <button class="process-btn" style="display: block;" onclick="analyzeSingleData()">
+                    🔍 分析單筆資料<br>Analyze Single Data
+                </button>
+            </div>
+
+            <!-- 切換按鈕 -->
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="toggle-btn" id="toggleBtn" onclick="toggleInputMode()">
+                    🔄 切換為手動輸入<br>Switch to Manual Input
+                </button>
+            </div>
+
+            <button class="process-btn" id="processBtn" style="display:none;" onclick="processData()">
+                🚀 開始分析<br>Start Analysis
+            </button>
+
+            <div id="personPicker" class="person-picker" style="display:none; text-align:center; margin: 20px 0;">
+                <label for="personSelect" style="margin-right:8px; font-weight:600;">選擇受測者編號（Select ID）:</label>
+                <select id="personSelect" style="min-width: 220px; padding: 6px 10px;"></select>
+                <button id="viewPersonBtn" class="process-btn">查看判定<br>View Results</button>
+                <div style="margin-top:8px; color:#666; font-size:0.9em;">
+                    （此清單僅包含清理後可用且年紀 < 80 的樣本）<br>(This list only includes cleaned, usable samples with age < 80)
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p id="loadingText">正在處理資料中，請稍候...<br>Processing data, please wait...</p>
+            </div>
+
+            <div id="errorMessage"></div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="display: inline-flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button id="downloadInputBtn" class="process-btn" style="display:none;" onclick="downloadInputData()">
+                        📄 下載輸入資料 (Json) <br>Download Input Data
+                    </button>
+                    <button id="exportImgBtn" class="process-btn" style="display:none;" onclick="exportResultImage()">
+                        🖼️ 匯出結果圖片 <br>Export Result Image
+                    </button>
+                    <button id="downloadBatchEncryptedBtn" class="process-btn" style="display:none;" onclick="downloadBatchEncryptedJson()">
+                        🔐 下載上傳結果（JSON Array）<br>Download Uploaded Result (Encrypted JSON)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 匯出圖片需要的套件（放在 </body> 前，也可以）-->
+            <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
